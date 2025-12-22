@@ -22,8 +22,8 @@ pst_db = PstDB(data_pth='data', issue=issue, year=year)
 # pst_db.add_date2art(issue=issue, date_field='accepted', date4insert='31.10.2025')
 # pst_db.empty_spaces(issue=issue)
 # # #
-pst_db.print_author()
-pst_db.get_statistics(issue)
+# pst_db.print_author()
+# pst_db.get_statistics(issue)
 pst_db.get_art_in_iss(issue)
 pst_db.make_docx(issue=issue)
 # # #
