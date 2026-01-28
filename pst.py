@@ -103,13 +103,15 @@ class PstDB:
         authors = OmegaConf.load(self.authors_pth) ############################
         author_data_lst = [[k, v['surname'][0], v['name'][0], v['patronymic'][0]] for k, v in authors.items()]
         authors_df = pd.DataFrame(author_data_lst)
-        print(authors_df.sort_values(1))
+        authors_df.columns = ['id', 'Фамилия', 'Имя', 'Отчество']
+        authors_df.set_index('id', inplace=True)
+        print(authors_df.sort_values('Фамилия'))
 
     def get_articles(self, folder):
         curr_art = []
         for r, d, fs in os.walk(folder):
             for f in fs:
-                print(f)
+                # print(f)
                 a = OmegaConf.load(os.path.join(r, f))
                 curr_art.append(a)
         return curr_art
@@ -124,10 +126,11 @@ class PstDB:
                     vol += ca['vol']
                     num_art += 1
         al = round(vol / 40000, 1)
-        print(vol, ' - ', al, ' - ', f'{round(al / 0.08, 1)} %')
+        print(f"Объем: {vol} знаков с пробелами ({al} а.л.) - {round(al / 0.08, 1)} %")
 
-    def get_art_in_iss(self, issue): #################################
-        curr_art = self.get_articles(folder='articles') ###################
+    def get_art_in_iss(self, issue): ##
+        print(f'Статьи в выпуске № {issue}:')
+        curr_art = self.get_articles(folder='articles') ##
         art_in_iss = []
         for i in self.issue_article[issue]:
             for ca in curr_art:
@@ -135,8 +138,8 @@ class PstDB:
                     art_in_iss.append(ca)
 
         for i in art_in_iss:
-            autors = [a['surname'][0] for a in i['authors']][0]
-            print(i['id'], autors, i['title'][0])
+            authors = [a['surname'][0] for a in i['authors']][0]
+            print(i['id'], authors, i['title'][0])
         self.art_in_iss = art_in_iss
 
     def add_edn2art(self, issue):
@@ -152,7 +155,7 @@ class PstDB:
 
     def add_date2art(self, issue, date_field, date4insert):
         curr_art = self.get_articles(folder='articles')
-        print(curr_art)
+        # print(curr_art)
         # accepted
         for n, i in enumerate(self.issue_article[issue]):
             for ca in curr_art:
@@ -161,6 +164,7 @@ class PstDB:
                         ca[date_field] = date4insert
                     with open(f"articles/a{ca['id']}.yaml", 'w') as fp:
                         OmegaConf.save(ca, fp.name)
+        print('Ok')
 
     def empty_spaces(self, issue):
         curr_art = self.get_articles(folder='articles')
@@ -268,6 +272,7 @@ class PstDB:
         document.add_page_break()
 
     def make_docx(self, issue):
+        self.get_art_in_iss(issue)
         doc = Document('data/pst_tmpl.docx')
         # doc.add_heading('СОДЕРЖАНИЕ', level=2)
         issue_edn = self.edn[self.issue][0]
@@ -302,6 +307,7 @@ class PstDB:
             self.add_art(doc, a, section)
 
         doc.save(f'pst_{issue}.docx')
+        print(f'Файл pst_{issue}.docx сформирован')
 
 
 def get_receiving(rec, lang='ru'):
@@ -463,21 +469,21 @@ def add_content(document, content):
 
 
 def authors_affiliation(rec, lang='ru'):
-    print('authors_affiliation')
+    # print('authors_affiliation')
     lst = []
     if lang == 'ru':
         pos = 0
     elif lang == 'en':
         pos = 1
     authors, authors_num = get_full_name(rec, lang=lang)
-    print(authors, authors_num)
+    # print(authors, authors_num)
     aff_lst = []
     for i in rec['authors']:
         for a in i['affs']:
             aff = f"{a['aff_name'][pos]}"
             aff_lst.append(aff)
     aff_lst = [[a['aff_name'][pos] for a in i['affs']] for i in rec['authors']]
-    print(aff_lst)
+    # print(aff_lst)
     # # return ', '.join(set(aff_lst))
     uniq_aff = set([j for i in aff_lst for j in i])
     uniq_aff_seq = []
@@ -485,28 +491,28 @@ def authors_affiliation(rec, lang='ru'):
         for j in i:
             if j not in uniq_aff_seq:
                 uniq_aff_seq.append(j)
-    print('uniq_aff_seq', uniq_aff_seq)
+    # print('uniq_aff_seq', uniq_aff_seq)
     if authors_num == 1:
         return authors, authors_num, ', '.join([j for i in aff_lst for j in i])
     else:
         dct = {i : [] for i in uniq_aff}
-        print(dct)
+        # print(dct)
         authors_w_num = []
         for n, author in enumerate(authors.split(', ')):
             authors_w_num.append(f"{author}{n+1}")
             for affil in aff_lst[n]:
                 dct[affil].append(n+1)
-        print(dct)
+        # print(dct)
 
         aff_w_num = []
         for n, af in enumerate(uniq_aff_seq):
             a_aff = []
             for m, au in enumerate(authors.split(', ')):
-                print(m)
+                # print(m)
                 a_af_lst = aff_lst[m]
                 for a_af in a_af_lst:
                     if a_af == af:
-                        print(n, af, m, au, a_af)
+                        # print(n, af, m, au, a_af)
                         a_aff.append(m+1)
             aff_w_num.append([af, a_aff])
 
@@ -523,13 +529,13 @@ def authors_affiliation(rec, lang='ru'):
             au_w_num.append([au, au_aff_lst])
 
 
-        print('aff_w_num', aff_w_num)
-        print([','.join([str(num) for num in i[1]]) + i[0] for i in aff_w_num])
+        # print('aff_w_num', aff_w_num)
+        # print([','.join([str(num) for num in i[1]]) + i[0] for i in aff_w_num])
         aff_w_num_str = [','.join([str(num) for num in i[1]]) + i[0] for i in aff_w_num]
         au_w_num_str = [i[0] + ','.join([str(num) for num in i[1]]) for i in au_w_num]
 
         affil_w_num = ',\n'.join([str(n+1) + i for n, i in enumerate(uniq_aff_seq)])
-        print('affil_w_num', affil_w_num)
+        # print('affil_w_num', affil_w_num)
 
         return ', '.join(au_w_num_str), authors_num, affil_w_num
 
